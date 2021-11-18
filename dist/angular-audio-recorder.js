@@ -823,9 +823,15 @@ angular.module('angularAudioRecorder.services')
           }
         },
         getPermission: function () {
-          navigator.getUserMedia({
-            "audio": true
-          }, html5HandlerConfig.gotStream, html5HandlerConfig.failStream);
+          if (navigator.mediaDevices.getUserMedia === undefined) {
+            navigator.getUserMedia({
+              "audio": true
+            }, html5HandlerConfig.gotStream, html5HandlerConfig.failStream);  
+          } else {
+            navigator.mediaDevices.getUserMedia({"audio": true})
+              .then(html5HandlerConfig.gotStream)
+              .catch(html5HandlerConfig.failStream);
+          }
         },
         init: function () {
           service.isHtml5 = true;
@@ -843,8 +849,12 @@ angular.module('angularAudioRecorder.services')
 
       navigator.getUserMedia = navigator.getUserMedia
         || navigator.webkitGetUserMedia
-        || navigator.mozGetUserMedia
-        || (navigator.mediaDevices != undefined) ? navigator.mediaDevices.getUserMedia : undefined;
+        || navigator.mozGetUserMedia;
+
+      if (navigator.mediaDevices === undefined)
+      {
+        navigator.mediaDevices = {};
+      }
 
 
       service.isCordova = false;
@@ -852,7 +862,7 @@ angular.module('angularAudioRecorder.services')
       var init = function () {
         if ('cordova' in window) {
           service.isCordova = true;
-        } else if (!forceSwf && navigator.getUserMedia) {
+        } else if (!forceSwf && (navigator.getUserMedia || navigator.mediaDevices.getUserMedia)) {
           html5HandlerConfig.init();
         } else {
           swfHandlerConfig.init();
